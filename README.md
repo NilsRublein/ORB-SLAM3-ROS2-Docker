@@ -5,18 +5,34 @@ This fork from  contains the following changes:
   * `camera.yaml` 
   * `--log-level` 
 * Added parameter to (not) use inertial mode
-* Added `.yaml` and `.launch` files for `RealSense_D435i` camera as well as a ROS2 version of [**VINS-RGBD's**](https://github.com/STAR-Center/VINS-RGBD) [`Normal.bag`](https://star-center.shanghaitech.edu.cn/seafile/d/0ea45d1878914077ade5/) to test it
+* Added `.yaml` and `.launch` files for `RealSense_D435i` camera as well as a ROS2 version of  to test it
 
 
 ## Test RealSense_D435i 
+
+Download the [**VINS-RGBD's**](https://github.com/STAR-Center/VINS-RGBD) [`Normal.bag`](https://star-center.shanghaitech.edu.cn/seafile/d/0ea45d1878914077ade5/), place it in `/ORB-SLAM3-ROS2-DOCKER/orb_slam3_ros2_wrapper/ros2_bags/` and convert it to a ROS2 bag
+
+```
+# If required, install rosbags:
+pip install rosbags
+
+# Move downloaded file
+mv ~/Downloads/Normal.bag ~/your_ws/src/ORB-SLAM3-ROS2-DOCKER/orb_slam3_ros2_wrapper/ros2_bags/
+
+# Convert ROS1 bag to a ROS2 bag
+rosbags-convert --src Normal.bag --dst ./Normal_ROS2_bag
+```
+
 Start the the docker container and run the following:
 
 ```
 # Start ROS bag in one terminal with renamed topics
+sudo docker compose run orb_slam3_22_humble
 cd colcon_ws/src/orb_slam3_ros2_wrapper/ros2_bags/
 ros2 bag play Normal_ROS2_bag/ --remap /camera/color/image_raw:=TEST_RealSense_D435i/camera/image_raw /camera/depth/image_rect_raw:=TEST_RealSense_D435i/camera/depth/image_raw /camera/imu:=TEST_RealSense_D435i/imu
 
 # Launch node in a another terminal
+sudo docker compose run orb_slam3_22_humble
 ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.lauch.py 
 ```
 
