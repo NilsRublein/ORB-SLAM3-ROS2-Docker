@@ -59,6 +59,10 @@ namespace ORB_SLAM3_Wrapper
         this->declare_parameter("no_odometry_mode", rclcpp::ParameterValue(false));
         this->get_parameter("no_odometry_mode", no_odometry_mode_);
 
+        this->declare_parameter("inertial_mode", rclcpp::ParameterValue(false));
+        this->get_parameter("inertial_mode", inertial_mode_);
+
+
         interface_ = std::make_shared<ORB_SLAM3_Wrapper::ORBSLAM3Interface>(strVocFile, strSettingsFile,
                                                                             sensor, bUseViewer, rosViz_, robot_x_,
                                                                             robot_y_, global_frame_, odom_frame_id_, robot_base_frame_id_);
@@ -95,8 +99,20 @@ namespace ORB_SLAM3_Wrapper
     void RgbdSlamNode::RGBDCallback(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD)
     {
         Sophus::SE3f Tcw;
-        if (interface_->trackRGBD(msgRGB, msgD, Tcw))
+        bool return_val = false;
+
+        RCLCPP_DEBUG_STREAM(this->get_logger(), "Inertial mode: " << inertial_mode_ );
+        if (inertial_mode_){
+            return_val = interface_->trackRGBDi(msgRGB, msgD, Tcw); // RGBD-Inertial
+        } 
+        else
         {
+            return_val = interface_->trackRGBD(msgRGB, msgD, Tcw); // RGBD-only
+        } 
+
+        if (return_val)
+        {
+            RCLCPP_DEBUG_STREAM(this->get_logger(), "Tracking result is successful!");
             isTracked_ = true;
             if(no_odometry_mode_) interface_->getDirectMapToRobotTF(msgRGB->header, tfMapOdom_);
             tfBroadcaster_->sendTransform(tfMapOdom_);

@@ -1,3 +1,25 @@
+# Fork Details
+
+This fork from  contains the following changes:
+* More generic launch files by adding lauch arguments for  
+  * `camera.yaml` 
+  * `--log-level` 
+* Added parameter to (not) use inertial mode
+* Added `.yaml` and `.launch` files for `RealSense_D435i` camera as well as a ROS2 version of [**VINS-RGBD's**](https://github.com/STAR-Center/VINS-RGBD) [`Normal.bag`](https://star-center.shanghaitech.edu.cn/seafile/d/0ea45d1878914077ade5/) to test it
+
+
+## Test RealSense_D435i 
+Start the the docker container and run the following:
+
+```
+# Start ROS bag in one terminal with renamed topics
+cd colcon_ws/src/orb_slam3_ros2_wrapper/ros2_bags/
+ros2 bag play Normal_ROS2_bag/ --remap /camera/color/image_raw:=TEST_RealSense_D435i/camera/image_raw /camera/depth/image_rect_raw:=TEST_RealSense_D435i/camera/depth/image_raw /camera/imu:=TEST_RealSense_D435i/imu
+
+# Launch node in a another terminal
+ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.lauch.py 
+```
+
 # ORB-SLAM3 ROS2 Wrapper Docker
 
 This repository contains a dockerized comprehensive wrapper for ORB-SLAM3 on ROS 2 Humble for Ubuntu 22.04.

@@ -8,3 +8,4 @@ ORB_SLAM3_RGBD_ROS2:
     visualization: true
     ros_visualization: false
     no_odometry_mode: false
+    inertial_mode: true

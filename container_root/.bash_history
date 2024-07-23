@@ -498,3 +498,20 @@ ls
 tmux
 ls
 ros2 launch orb_slam3_ros2_wrapper unirobot.launch.py 
+cd /root/colcon_ws/
+colcon build --symlink-install
+source install/setup.bash
+ls
+ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.py
+colcon build --symlink-install
+ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.lauch.py --ros-args --log-level DEBUG
+ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.lauch.py
+exit
+cd colcon_ws/src/
+ls
+cd orb_slam3_ros2_wrapper/
+ls
+cd ros2_bags/
+ros2 bag play Normal_ROS2_bag/ --remap /camera/color/image_raw:=TEST_RealSense_D435i/camera/image_raw /camera/depth/image_rect_raw:=TEST_RealSense_D435i/camera/depth/image_raw /camera/imu:=TEST_RealSense_D435i/imu
+ros2 param list
+exit
