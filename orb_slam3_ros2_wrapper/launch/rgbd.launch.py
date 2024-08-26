@@ -56,10 +56,10 @@ def generate_launch_description():
 
     #---------------------------------------------
 
-    def all_nodes_launch(context, robot_namespace, robot_x, robot_y):
+    def all_nodes_launch(context, robot_namespace, robot_x, robot_y, config_file_path, log_level):
         params_file = LaunchConfiguration('params_file')
         vocabulary_file_path = "/home/orb/ORB_SLAM3/Vocabulary/ORBvoc.txt"
-        config_file_path = "/root/colcon_ws/src/orb_slam3_ros2_wrapper/params/gazebo_rgbd.yaml"
+        
         declare_params_file_cmd = DeclareLaunchArgument(
             'params_file',
             default_value=os.path.join(orb_wrapper_pkg, 'params', 'rgbd-ros-params.yaml'),
@@ -69,9 +69,10 @@ def generate_launch_description():
             'robot_base_frame': robot_namespace.perform(context) + '/base_footprint',
             'odom_frame': robot_namespace.perform(context) + '/odom',
             'robot_x': robot_x.perform(context),
-            'robot_y': robot_y.perform(context)
+            'robot_y': robot_y.perform(context),
+            'config_file_path': config_file_path.perform(context),
+            'log_level': log_level.perform(context)
             }
-
 
         configured_params = RewrittenYaml(
             source_file=params_file,
@@ -89,7 +90,7 @@ def generate_launch_description():
 
         return [declare_params_file_cmd, orb_slam3_node]
 
-    opaque_function = OpaqueFunction(function=all_nodes_launch, args=[robot_namespace, robot_x, robot_y])
+    opaque_function = OpaqueFunction(function=all_nodes_launch, args=[robot_namespace, robot_x, robot_y, config_file_path, log_level])
 #---------------------------------------------
 
     return LaunchDescription([
