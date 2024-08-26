@@ -1,0 +1,86 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "PinHole"
+
+# Left Camera calibration 
+Camera.fx: 362.85870361328125
+Camera.fy: 362.85870361328125
+Camera.cx: 463.1419677734375
+Camera.cy: 311.79473876953125
+
+
+# distortion parameters
+Camera1.k1: 0.0
+Camera1.k2: 0.0
+Camera1.p1: 0.0
+Camera1.p2: 0.0
+
+# Resolution 960x600 -> Option B at e.g. 120fps https://www.stereolabs.com/en-nl/products/zed-x
+Camera.width: 960
+Camera.height: 600
+
+# Camera frames per second 
+Camera.fps: 30
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Close/Far threshold. Baseline times.
+Stereo.ThDepth: 40.0
+Stereo.b: 0.0745
+
+# Depth Map Scale Factor (usually set to 1 if it's already in meters)
+DepthMap.factor: 1.0
+
+# TODO!!!
+# ------ IMU Settings ------ #
+
+# IMU Parameters @TODO
+IMU.NoiseGyro: [0.001, 0.001, 0.001]
+IMU.NoiseAcc: [0.01, 0.01, 0.01]
+IMU.GyroWalk: [0.0001, 0.0001, 0.0001]
+IMU.AccWalk: [0.0002, 0.0002, 0.0002]
+IMU.Frequency: 100
+
+# Camera-IMU transform @TODO
+Tbc: [1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0] # -> What's the order?
+# translation [0.0, -0.03564900532364845, -0.00014700002793688327]
+# rotation: [0.0018871612846851349, -0.0, -0.0, 0.9999982118606567] (x,y,z,w)
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 1000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0
