@@ -11,7 +11,7 @@ container_root/.pki/
 container_root/.ros/
 container_root/.rviz2/
 container_root/.viminfo/
-container_root/.bash_history/
+container_root/.bash_history
 container_root/.cmake
 orb_slam3_ros2_wrapper/ros2_bags/
 **.vscode**
