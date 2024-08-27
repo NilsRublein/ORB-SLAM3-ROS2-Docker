@@ -29,8 +29,13 @@ namespace ORB_SLAM3_Wrapper
           robotFrame_(robotFrame)
     {
         std::cout << "Interface constructor started" << endl;
+
+        // Main ORB SLAM3 object
         mSLAM_ = std::make_shared<ORB_SLAM3::System>(strVocFile_, strSettingsFile_, sensor_, bUseViewer_);
+
+        // handle the conversion between ORB-SLAM3 data types and ROS2 message types
         typeConversions_ = std::make_shared<WrapperTypeConversions>();
+
         std::cout << "Interface constructor complete" << endl;
     }
 
@@ -44,6 +49,7 @@ namespace ORB_SLAM3_Wrapper
         allKFs_.clear();
     }
 
+    // Creates a mapping between keyframe IDs and their corresponding keyframe objects -> allows for quick lookup of keyframes by their ID. Used in calculateReferencePoses().
     std::unordered_map<long unsigned int, ORB_SLAM3::KeyFrame *> ORBSLAM3Interface::makeKFIdPair(std::vector<ORB_SLAM3::Map *> mapsList)
     {
         std::unordered_map<long unsigned int, ORB_SLAM3::KeyFrame *> mpIdKFs;
@@ -60,6 +66,14 @@ namespace ORB_SLAM3_Wrapper
         return mpIdKFs;
     }
 
+    /*
+        Computes the reference poses for all maps managed by ORB-SLAM3 (In ROS coord frame). 
+        This involves transforming the poses of keyframes to align with the robot's coordinate system, accounting for any offsets. 
+        The poses are stored in the global variable mapReferencePoses_ map, which associates each map with its reference pose.
+            This is used in ...
+
+        Is called in trackRGBD() and trackRGBDi() to update the current reference poses.
+    */
     void ORBSLAM3Interface::calculateReferencePoses()
     {
         struct compareInitKFid
@@ -110,6 +124,10 @@ namespace ORB_SLAM3_Wrapper
         mapReferencesMutex_.unlock();
     }
 
+    /*
+        Retrieves the current map points tracked by ORB-SLAM3 and transforms them into the ROS2 coordinate frame. 
+        It then converts these points into a ROS2 PointCloud2 message, which can be used for visualization or further processing in ROS2.
+    */
     void ORBSLAM3Interface::getCurrentMapPoints(sensor_msgs::msg::PointCloud2 &mapPointCloud)
     {
         std::lock_guard<std::mutex> lock(currentMapPointsMutex_);
@@ -138,6 +156,7 @@ namespace ORB_SLAM3_Wrapper
         mapPointCloud = typeConversions_->MapPointsToPCL(trackedMapPoints);
     }
 
+    // Populates a MapData message with the current state of the SLAM system, including the pose graph and optionally the map points.
     void ORBSLAM3Interface::mapDataToMsg(slam_msgs::msg::MapData &mapDataMsg, bool currentMapKFOnly, bool includeMapPoints, std::vector<int> kFIDforMapPoints)
     {
         std::lock_guard<std::mutex> lock(mapDataMutex_);
@@ -176,6 +195,7 @@ namespace ORB_SLAM3_Wrapper
         mapDataMutex_.unlock();
     }
 
+    //  Updates the latest tracked pose by applying the reference poses calculated earlier. This ensures that the tracked pose is consistent with the global frame of reference.
     void ORBSLAM3Interface::correctTrackedPose(Sophus::SE3f &s)
     {
         mapReferencesMutex_.lock();
@@ -184,6 +204,7 @@ namespace ORB_SLAM3_Wrapper
         mapReferencesMutex_.unlock();
     }
 
+    // Compute the transforms between the map frame and the robot frame
     void ORBSLAM3Interface::getDirectMapToRobotTF(std_msgs::msg::Header headerToUse, geometry_msgs::msg::TransformStamped &tf)
     {
         tf.header.frame_id = globalFrame_;
@@ -205,6 +226,7 @@ namespace ORB_SLAM3_Wrapper
         }
     }
 
+    // Compute the transforms between the map frame and the odom frame
     void ORBSLAM3Interface::getMapToOdomTF(const nav_msgs::msg::Odometry::SharedPtr msgOdom, geometry_msgs::msg::TransformStamped &tf)
     {
         // tf.header.stamp;
@@ -236,6 +258,8 @@ namespace ORB_SLAM3_Wrapper
         }
     }
 
+    // Retrieves the pose graph of the SLAM system, either for the entire map or just the current keyframes.
+    // Used in mapDataToMsg().
     void ORBSLAM3Interface::getOptimizedPoseGraph(slam_msgs::msg::MapGraph &graph, bool currentMapKFOnly)
     {
         if (!currentMapKFOnly)
@@ -276,6 +300,7 @@ namespace ORB_SLAM3_Wrapper
         }
     }
 
+    // Store IMU data in buffer, which is used in trackRGBDi().
     void ORBSLAM3Interface::handleIMU(const sensor_msgs::msg::Imu::SharedPtr msgIMU)
     {
         bufMutex_.lock();
@@ -283,11 +308,20 @@ namespace ORB_SLAM3_Wrapper
         bufMutex_.unlock();
     }
 
+    /*
+        Handle the tracking process for RGB-D images and IMU data. 
+        Convert the incoming ROS2 images into OpenCV matrices and pass them to ORB-SLAM3 for tracking.
+
+        Update the tracked pose based on ORB-SLAM3's output. 
+        Check the tracking state returned by ORB-SLAM3 and handle cases where tracking fails (e.g., tracking lost, not initialized). 
+        If tracking is successful, the reference poses are recalculated, and the tracked pose is corrected.
+    */
     bool ORBSLAM3Interface::trackRGBDi(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD, Sophus::SE3f &Tcw)
     {
         orbAtlas_ = mSLAM_->GetAtlas();
         cv_bridge::CvImageConstPtr cvRGB;
         cv_bridge::CvImageConstPtr cvD;
+
         // Copy the ros rgb image message to cv::Mat.
         try
         {
@@ -328,7 +362,7 @@ namespace ORB_SLAM3_Wrapper
         bufMutex_.unlock();
         if (imuBuf_.size() > 0)
         {
-            // track the frame.
+            // Track the frame.
             Tcw = mSLAM_->TrackRGBD(cvRGB->image, cvD->image, typeConversions_->stampToSec(msgRGB->header.stamp), vImuMeas);
             auto currentTrackingState = mSLAM_->GetTrackingState();
             auto orbLoopClosing = mSLAM_->GetLoopClosing();
@@ -365,6 +399,11 @@ namespace ORB_SLAM3_Wrapper
         return false;
     }
 
+    /*
+        Handle the tracking process for RGB-D images only.
+        Convert the incoming ROS2 images into OpenCV matrices and pass them to ORB-SLAM3 for tracking.
+        Update the tracked pose based on ORB-SLAM3's output.
+    */
     bool ORBSLAM3Interface::trackRGBD(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD, Sophus::SE3f &Tcw)
     {
         orbAtlas_ = mSLAM_->GetAtlas();

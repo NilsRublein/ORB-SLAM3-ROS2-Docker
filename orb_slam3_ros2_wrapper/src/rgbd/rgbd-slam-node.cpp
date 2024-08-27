@@ -25,13 +25,14 @@ namespace ORB_SLAM3_Wrapper
         depthSub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::Image>>(this, this->get_parameter("depth_image_topic_name").as_string());
         syncApproximate_ = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(approximate_sync_policy(10), *rgbSub_, *depthSub_);
         syncApproximate_->registerCallback(&RgbdSlamNode::RGBDCallback, this);
-
         imuSub_ = this->create_subscription<sensor_msgs::msg::Imu>(this->get_parameter("imu_topic_name").as_string(), 1000, std::bind(&RgbdSlamNode::ImuCallback, this, std::placeholders::_1));
         odomSub_ = this->create_subscription<nav_msgs::msg::Odometry>(this->get_parameter("odom_topic_name").as_string(), 1000, std::bind(&RgbdSlamNode::OdomCallback, this, std::placeholders::_1));
+        
         // ROS Publishers
         mapDataPub_ = this->create_publisher<slam_msgs::msg::MapData>("map_data", 10);
         mapPointsPub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("map_points", 10);
-        // Services
+        
+        // ROS Services
         getMapDataService_ = this->create_service<slam_msgs::srv::GetMap>("orb_slam3_get_map_data", std::bind(&RgbdSlamNode::getMapServer, this,
                                                                                                               std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         // TF
@@ -73,7 +74,7 @@ namespace ORB_SLAM3_Wrapper
         this->declare_parameter("landmark_publish_frequency", rclcpp::ParameterValue(1000));
         this->get_parameter("landmark_publish_frequency", landmark_publish_frequency_);
 
-        // Timers
+        // Timers for periodically publishing map data and landmarks if visualization is enabled.
         mapDataCallbackGroup_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         mapDataTimer_ = this->create_wall_timer(std::chrono::milliseconds(map_data_publish_frequency_), std::bind(&RgbdSlamNode::publishMapData, this), mapDataCallbackGroup_);
         if (rosViz_)
@@ -102,6 +103,7 @@ namespace ORB_SLAM3_Wrapper
         RCLCPP_INFO(this->get_logger(), "DESTRUCTOR!");
     }
 
+    // Get IMU data and forward it to the ORB SLAM3 system, used in trackRGBDi()
     void RgbdSlamNode::ImuCallback(const sensor_msgs::msg::Imu::SharedPtr msgIMU)
     {
         RCLCPP_DEBUG_STREAM(this->get_logger(), "ImuCallback");
@@ -109,6 +111,7 @@ namespace ORB_SLAM3_Wrapper
         interface_->handleIMU(msgIMU);
     }
 
+    //  If no_odometry_mode_ is false, it updates the transformation between the map and odometry frames.
     void RgbdSlamNode::OdomCallback(const nav_msgs::msg::Odometry::SharedPtr msgOdom)
     {
         if(!no_odometry_mode_)
@@ -119,6 +122,11 @@ namespace ORB_SLAM3_Wrapper
         else RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 4000, "Odometry msg recorded but no odometry mode is true, set to false to use this odometry");
     }
 
+    /*
+        Core function that handles synchronized RGB and depth image pairs. 
+        Depending on whether the inertial mode is active, it calls different tracking functions in the ORB-SLAM3 interface. 
+        If tracking is successful, it updates the transformation from the map to the robot and publishes it.
+    */
     void RgbdSlamNode::RGBDCallback(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD)
     {
         Sophus::SE3f Tcw;
@@ -145,11 +153,13 @@ namespace ORB_SLAM3_Wrapper
         }
     }
 
+    // Publish the current map points as a point cloud if tracking is successful. 
+    // Checks if tracking was successful before attempting to publish the map points.
     void RgbdSlamNode::publishMapPointCloud()
     {
         if (isTracked_)
         {
-            // Using high resolution clock to measure time
+            // Using high resolution clock to measure time to calculate the time taken for each line 
             auto start = std::chrono::high_resolution_clock::now();
 
             sensor_msgs::msg::PointCloud2 mapPCL;
@@ -172,24 +182,22 @@ namespace ORB_SLAM3_Wrapper
             auto time_publish_map_points = std::chrono::duration_cast<std::chrono::duration<double>>(t3 - t2).count();
             RCLCPP_DEBUG_STREAM(this->get_logger(), "Time to publish map points: " << time_publish_map_points << " seconds");
             RCLCPP_DEBUG_STREAM(this->get_logger(), "=======================");
-
-
-            // Calculate the time taken for each line
-
-            // Print the time taken for each line
         }
     }
 
+    // Publishes the current map data, including keyframes and other relevant SLAM data, at a set frequency.
     void RgbdSlamNode::publishMapData()
     {
         if (isTracked_)
         {
+            // Get current tracking frequency.
             auto start = std::chrono::high_resolution_clock::now();
             RCLCPP_DEBUG_STREAM(this->get_logger(), "Publishing map data");
             RCLCPP_INFO_STREAM(this->get_logger(), "Current ORB-SLAM3 tracking frequency: " << frequency_tracker_count_ / std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - frequency_tracker_clock_).count() << " frames / sec");
             frequency_tracker_clock_ = std::chrono::high_resolution_clock::now();
             frequency_tracker_count_ = 0;
-            // publish the map data (current active keyframes etc)
+
+            // Publish the map data (current active keyframes etc.).
             slam_msgs::msg::MapData mapDataMsg;
             interface_->mapDataToMsg(mapDataMsg, true, false);
             mapDataPub_->publish(mapDataMsg);
@@ -200,6 +208,7 @@ namespace ORB_SLAM3_Wrapper
         }
     }
 
+    // Handles requests to the map data service, allowing external nodes to retrieve the map data from the ORB-SLAM3 system.
     void RgbdSlamNode::getMapServer(std::shared_ptr<rmw_request_id_t> request_header,
                                     std::shared_ptr<slam_msgs::srv::GetMap::Request> request,
                                     std::shared_ptr<slam_msgs::srv::GetMap::Response> response)

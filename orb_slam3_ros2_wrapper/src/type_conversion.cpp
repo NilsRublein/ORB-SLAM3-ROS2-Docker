@@ -9,12 +9,14 @@
 
 namespace ORB_SLAM3_Wrapper
 {
+    // Converts ROS2 time stamp to total seconds
     double WrapperTypeConversions::stampToSec(builtin_interfaces::msg::Time stamp)
     {
         double seconds = stamp.sec + (stamp.nanosec * pow(10, -9));
         return seconds;
     }
 
+    // Convert seconds to ROS2 timestamp
     builtin_interfaces::msg::Time WrapperTypeConversions::secToStamp(double seconds)
     {
         builtin_interfaces::msg::Time stamp;
@@ -23,6 +25,7 @@ namespace ORB_SLAM3_Wrapper
         return stamp;
     }
 
+    // Eigen::Vector3f -> geometry_msgs::msg::Point
     geometry_msgs::msg::Point WrapperTypeConversions::eigenToPointMsg(Eigen::Vector3f &e)
     {
         geometry_msgs::msg::Point p;
@@ -32,6 +35,7 @@ namespace ORB_SLAM3_Wrapper
         return p;
     }
 
+    // Eigen::Quaternionf -> geometry_msgs::msg::Quaternion
     geometry_msgs::msg::Quaternion WrapperTypeConversions::eigenToQuaternionMsg(Eigen::Quaternionf &e)
     {
         geometry_msgs::msg::Quaternion q;
@@ -42,6 +46,14 @@ namespace ORB_SLAM3_Wrapper
         return q;
     }
 
+    /* 
+        Converts a pose represented as Sophus::SE3f (used by ORB-SLAM3) to an Eigen::Affine3f matrix in the ROS coordinate system.
+        Rotate and translate the pose from the ORB-SLAM3 camera coordinate system to the ROS coordinate system, 
+        then invert the transformation to switch from camera to map coordinates (switch from camera reference frame to world reference frame).
+
+        ORB-SLAM3 operates in the camera's coordinate system. This means that the pose of the camera at any given time is described relative to the camera's own coordinate frame.
+        In ORB-SLAM3, the pose Tcw is often used to describe the transformation from the world/map coordinates to the camera coordinates.
+    */
     Eigen::Affine3f WrapperTypeConversions::se3ORBToROS(const Sophus::SE3f &s)
     {
         Eigen::Matrix3f tfCameraRotation = s.rotationMatrix();
@@ -71,6 +83,7 @@ namespace ORB_SLAM3_Wrapper
         return affineMatrix;
     }
 
+    // Converts an Eigen::Vector3f vector from ORB-SLAM3's coordinate system to ROS's coordinate system. Only translation!
     Eigen::Vector3f WrapperTypeConversions::vector3fORBToROS(const Eigen::Vector3f &s)
     {
         Eigen::Matrix3f tfCameraRotation = Eigen::Matrix3f::Identity();
@@ -92,12 +105,14 @@ namespace ORB_SLAM3_Wrapper
         return tfCameraTranslation;
     }
 
+    // Sophus::SE3f pose -> Eigen::Affine3d matrix (From ORB to ROS frame)
     Eigen::Affine3d WrapperTypeConversions::se3ToAffine(const Sophus::SE3f &s)
     {
         Eigen::Affine3d affineTf = se3ORBToROS(s).cast<double>();
         return affineTf;
     }
 
+    // Sophus::SE3f pose -> ROS 2 geometry_msgs::msg::Pose (From ORB to ROS frame)
     geometry_msgs::msg::Pose WrapperTypeConversions::se3ToPoseMsg(const Sophus::SE3f &s)
     {
         Eigen::Affine3d poseTransform = se3ORBToROS(s).cast<double>();
@@ -105,6 +120,10 @@ namespace ORB_SLAM3_Wrapper
         return pose;
     }
 
+    /*
+        Converts a vector of Eigen::Vector3f points (which might represent a map or a set of 3D points in space) into a ROS 2 sensor_msgs::msg::PointCloud2 message. 
+        Involves setting up the point cloud message structure and copying the point data into the message.
+    */
     sensor_msgs::msg::PointCloud2 WrapperTypeConversions::MapPointsToPCL(std::vector<Eigen::Vector3f>& mapPoints)
     {
         const int numChannels = 3; // x y z
@@ -152,6 +171,15 @@ namespace ORB_SLAM3_Wrapper
         }
         return cloud;
     }
+
+    /*
+    Template Functions for Generalized Transformations of poses and points with reference to another affine transformation (Eigen::Affine3d). 
+    Return various output types, 
+        - geometry_msgs::msg::Pose
+        - Eigen::Affine3d
+        - geometry_msgs::msg::Point
+        - Eigen::Vector3f
+    */
 
     template <>
     geometry_msgs::msg::Pose WrapperTypeConversions::transformPoseWithReference(Eigen::Affine3d &affineMapToRef, Sophus::SE3f &transform)
