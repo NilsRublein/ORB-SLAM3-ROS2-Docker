@@ -1,18 +1,20 @@
 # Fork Details
 
-This fork from  contains the following changes:
-* More generic launch files by adding lauch arguments for  
-  * `camera.yaml` 
-  * `--log-level` 
+This fork contains so far the following changes:
 * Added parameter to (not) use inertial mode
-* Added `.yaml` and `.launch` files for `RealSense_D435i` camera as well as a ROS2 version of  to test it
+* Added comments to 
+  * `type_conversions.cpp`
+  * `orb_slam3_interface.cpp`
+  * `rgbd-slam-node.cpp`
+* Added `.yaml` and `.launch` files for 
+  * `RealSense_D435i` camera 
+  * `ZED_X` camera (still work in progress)
+   
+## Test RealSense_D435i with ROS bag
 
+Download the [**VINS-RGBD's**](https://github.com/STAR-Center/VINS-RGBD) [`Normal.bag`](https://star-center.shanghaitech.edu.cn/seafile/d/0ea45d1878914077ade5/) and convert it to a ROS2 bag
 
-## Test RealSense_D435i 
-
-Download the [**VINS-RGBD's**](https://github.com/STAR-Center/VINS-RGBD) [`Normal.bag`](https://star-center.shanghaitech.edu.cn/seafile/d/0ea45d1878914077ade5/), place it in `/ORB-SLAM3-ROS2-DOCKER/orb_slam3_ros2_wrapper/ros2_bags/` and convert it to a ROS2 bag
-
-```
+```bash
 # If required, install rosbags:
 pip install rosbags
 
@@ -23,18 +25,23 @@ mv ~/Downloads/Normal.bag ~/your_ws/src/ORB-SLAM3-ROS2-DOCKER/orb_slam3_ros2_wra
 rosbags-convert --src Normal.bag --dst ./Normal_ROS2_bag
 ```
 
-Start the the docker container and run the following:
+Run the ROS bag:
+```bash
+# This docker container expects ROS_DOMAIN_ID=55. If not already set, you can run:
+export ROS_DOMAIN_ID=55
 
+# Start ROS bag in one terminal with renamed topics 
+ros2 bag play Normal_ROS2_bag/ --remap /camera/color/image_raw:=robot_0/rgb_camera /camera/depth/image_rect_raw:=robot_0/depth_camera /camera/imu:=robot_0/imu
 ```
-# Start ROS bag in one terminal with renamed topics
-sudo docker compose run orb_slam3_22_humble
-cd colcon_ws/src/orb_slam3_ros2_wrapper/ros2_bags/
-ros2 bag play Normal_ROS2_bag/ --remap /camera/color/image_raw:=TEST_RealSense_D435i/camera/image_raw /camera/depth/image_rect_raw:=TEST_RealSense_D435i/camera/depth/image_raw /camera/imu:=TEST_RealSense_D435i/imu
 
-# Launch node in a another terminal
+Run ORB-SLAM3:
+```bash
+# Launch docker container and node in a another terminal
 sudo docker compose run orb_slam3_22_humble
 ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.lauch.py 
 ```
+
+***
 
 # ORB-SLAM3 ROS2 Wrapper Docker
 
