@@ -38,7 +38,7 @@ Run ORB-SLAM3:
 ```bash
 # Launch docker container and node in a another terminal
 sudo docker compose run orb_slam3_22_humble
-ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.lauch.py 
+ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.launch.py 
 ```
 
 ***
