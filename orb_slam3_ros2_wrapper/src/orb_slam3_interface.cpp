@@ -204,7 +204,7 @@ namespace ORB_SLAM3_Wrapper
         mapReferencesMutex_.unlock();
     }
 
-    // Compute the transforms between the map frame and the robot frame
+    // Compute the transforms from the map frame to the robot frame
     void ORBSLAM3Interface::getDirectMapToRobotTF(std_msgs::msg::Header headerToUse, geometry_msgs::msg::TransformStamped &tf)
     {
         tf.header.frame_id = globalFrame_;
@@ -226,7 +226,7 @@ namespace ORB_SLAM3_Wrapper
         }
     }
 
-    // Compute the transforms between the map frame and the odom frame
+    // Compute the transforms from the map frame to the odom frame
     void ORBSLAM3Interface::getMapToOdomTF(const nav_msgs::msg::Odometry::SharedPtr msgOdom, geometry_msgs::msg::TransformStamped &tf)
     {
         // tf.header.stamp;
