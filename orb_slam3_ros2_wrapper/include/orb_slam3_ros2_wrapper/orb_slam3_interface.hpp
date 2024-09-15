@@ -78,6 +78,8 @@ namespace ORB_SLAM3_Wrapper
 
         void getCurrentMapPoints(sensor_msgs::msg::PointCloud2 &mapPointCloud);
 
+        void getCurrentKFPoints(sensor_msgs::msg::PointCloud2 &kFPointCloud);
+
         void handleIMU(const sensor_msgs::msg::Imu::SharedPtr msgIMU);
 
         bool trackRGBDi(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD, Sophus::SE3f &Tcw);
@@ -98,6 +100,8 @@ namespace ORB_SLAM3_Wrapper
         std::mutex bufMutex_;
         std::mutex mapDataMutex_;
         std::mutex currentMapPointsMutex_;
+        std::mutex currentKFPointsMutex_;
+
 
         std::unordered_map<ORB_SLAM3::Map *, Eigen::Affine3d> mapReferencePoses_;
         std::mutex mapReferencesMutex_;

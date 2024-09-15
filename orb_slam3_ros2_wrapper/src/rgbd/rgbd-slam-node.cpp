@@ -156,8 +156,8 @@ namespace ORB_SLAM3_Wrapper
                 tfBroadcaster_->sendTransform(tfMapOdom_);
             }
             ++frequency_tracker_count_;
-            // publishMapPointCloud();
-            // std::thread(&RgbdSlamNode::publishMapPointCloud, this).detach();
+            publishMapPointCloud();
+            std::thread(&RgbdSlamNode::publishMapPointCloud, this).detach();
         }
     }
 
@@ -176,7 +176,8 @@ namespace ORB_SLAM3_Wrapper
             auto time_create_mapPCL = std::chrono::duration_cast<std::chrono::duration<double>>(t1 - start).count();
             RCLCPP_DEBUG_STREAM(this->get_logger(), "Time to create mapPCL object: " << time_create_mapPCL << " seconds");
 
-            interface_->getCurrentMapPoints(mapPCL);
+            // interface_->getCurrentMapPoints(mapPCL);
+            interface_->getCurrentKFPoints(mapPCL);
 
             if (mapPCL.data.size() == 0)
                 return;
