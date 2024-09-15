@@ -9,8 +9,8 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     # Set environment variables
     robot_namespace = "robot_0"
-    robot_x = "1.0"
-    robot_y = "1.0"
+    robot_x = "0.0"
+    robot_y = "0.0"
 
     # Set the config file path to the camera params
     config_file_path = "/root/colcon_ws/src/orb_slam3_ros2_wrapper/params/RealSense_D435i.yaml"
