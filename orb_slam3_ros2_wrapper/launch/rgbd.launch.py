@@ -87,8 +87,22 @@ def generate_launch_description():
             namespace=robot_namespace.perform(context),
             arguments=[vocabulary_file_path, config_file_path],
             parameters=[configured_params])
+        
+        octomap_server_node = Node(
+            package='octomap_server',
+            executable='octomap_server_node',
+            name='octomap_server',
+            output='screen',
+            parameters=[{
+                'resolution': 0.05,  # Set the desired resolution of your Octomap
+                'frame_id': 'map',  # Set the frame_id for the octomap
+            }],
+            remappings=[
+                ('/cloud_in', robot_namespace.perform(context) + '/map_points'),  # Remap the PointCloud2 topic
+            ]
+        )
 
-        return [declare_params_file_cmd, orb_slam3_node]
+        return [declare_params_file_cmd, orb_slam3_node, octomap_server_node]
 
     opaque_function = OpaqueFunction(function=all_nodes_launch, args=[robot_namespace, robot_x, robot_y, config_file_path, log_level])
 #---------------------------------------------

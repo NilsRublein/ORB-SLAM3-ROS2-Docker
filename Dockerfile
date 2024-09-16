@@ -25,6 +25,13 @@ RUN apt-get install -y \
     ca-certificates\
     software-properties-common
 
+RUN apt-get install -y ros-humble-rmw-cyclonedds-cpp
+
+# Install octomap stuff
+RUN apt-get install -y \
+    libpcl1 \
+    ros-humble-octomap-*
+
 RUN apt update
 
 

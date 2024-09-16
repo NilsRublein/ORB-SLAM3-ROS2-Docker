@@ -107,6 +107,8 @@ alias sep='echo "===============================================================
 source /opt/ros/humble/setup.bash
 export SCOUT_NAMESPACE=scout_2
 export ROS_DOMAIN_ID=55
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export CYCLONEDDS_URI=~/.ros/cyclonedds.xml
 export RCUTILS_COLORIZED_OUTPUT=1
 cd
 sros
