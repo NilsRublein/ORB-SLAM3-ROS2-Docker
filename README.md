@@ -42,6 +42,24 @@ sudo docker compose run orb_slam3_22_humble
 ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.launch.py 
 ```
 
+## TUM1
+
+Run the ROS bag:
+```bash
+# This docker container expects ROS_DOMAIN_ID=55. If not already set, you can run:
+export ROS_DOMAIN_ID=55
+
+# Start ROS bag in one terminal with renamed topics 
+ros2 bag play rgbd_dataset_freiburg1_xyz_ROS2_bag/ --remap /camera/rgb/image_color:=robot_0/rgb_camera /camera/depth/image:=robot_0/depth_camera
+```
+
+Run ORB-SLAM3:
+```bash
+# Launch docker container and node in a another terminal
+sudo docker compose run orb_slam3_22_humble
+ros2 launch orb_slam3_ros2_wrapper TUM1.launch.py 
+```
+
 ## Octomap in Rviz2
 
 `rgbd.launch.py` has been modified to also launch an `octomap_server`. 
