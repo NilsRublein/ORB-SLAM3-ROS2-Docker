@@ -6,6 +6,7 @@ This fork contains so far the following changes:
   * `type_conversions.cpp`
   * `orb_slam3_interface.cpp`
   * `rgbd-slam-node.cpp`
+* Added `octomap_server` to the main launch file
 * Added `.yaml` and `.launch` files for 
   * `RealSense_D435i` camera 
   * `ZED_X` camera (still work in progress)
@@ -40,6 +41,22 @@ Run ORB-SLAM3:
 sudo docker compose run orb_slam3_22_humble
 ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.launch.py 
 ```
+
+## Octomap in Rviz2
+
+`rgbd.launch.py` has been modified to also launch an `octomap_server`. 
+
+If you want to visualize the octomap in Rviz2 outside the docker, install the following dependencies on your machine via:
+```bash
+sudo apt install libpcl1 ros-humble-octomap-*
+```
+
+Because there are some [errors](https://robotics.stackexchange.com/questions/112732/error-loading-octomap-using-rviz2-plugin) for the octomap Rviz2 plugin, we have to start RVIZ as follows: 
+```bash
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/liboctomap.so ros2 run rviz2 rviz2
+```
+
+Finally, in Rviz2, select from `octomap_rviz_plugins` the `OccupancyGrid` plugin to display the 3D octomap.
 
 ***
 
