@@ -7,42 +7,19 @@ This fork contains so far the following changes:
   * `orb_slam3_interface.cpp`
   * `rgbd-slam-node.cpp`
 * Added `octomap_server` to the main launch file
-* Added `.yaml` and `.launch` files for 
-  * `RealSense_D435i` camera 
-  * `ZED_X` camera (still work in progress)
+* Added scripts for testing on [TUM rgbd dataset](https://cvg.cit.tum.de/rgbd/dataset/)
    
-## Test RealSense_D435i with ROS bag
+## TUM1
 
-Download the [**VINS-RGBD's**](https://github.com/STAR-Center/VINS-RGBD) [`Normal.bag`](https://star-center.shanghaitech.edu.cn/seafile/d/0ea45d1878914077ade5/) and convert it to a ROS2 bag
+Download the rosbag and convert it to a ROS2 bag:
 
 ```bash
 # If required, install rosbags:
 pip install rosbags
 
-# Move downloaded file
-mv ~/Downloads/Normal.bag ~/your_ws/src/ORB-SLAM3-ROS2-DOCKER/orb_slam3_ros2_wrapper/ros2_bags/
-
 # Convert ROS1 bag to a ROS2 bag
-rosbags-convert --src Normal.bag --dst ./Normal_ROS2_bag
+rosbags-convert --src rgbd_dataset_freiburg1_xyz.bag --dst ./rgbd_dataset_freiburg1_xyz_ROS2_bag
 ```
-
-Run the ROS bag:
-```bash
-# This docker container expects ROS_DOMAIN_ID=55. If not already set, you can run:
-export ROS_DOMAIN_ID=55
-
-# Start ROS bag in one terminal with renamed topics 
-ros2 bag play Normal_ROS2_bag/ --remap /camera/color/image_raw:=robot_0/rgb_camera /camera/depth/image_rect_raw:=robot_0/depth_camera /camera/imu:=robot_0/imu
-```
-
-Run ORB-SLAM3:
-```bash
-# Launch docker container and node in a another terminal
-sudo docker compose run orb_slam3_22_humble
-ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.launch.py 
-```
-
-## TUM1
 
 Run the ROS bag:
 ```bash
