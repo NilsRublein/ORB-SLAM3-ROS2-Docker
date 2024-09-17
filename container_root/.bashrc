@@ -104,6 +104,9 @@ alias sws='source /root/colcon_ws/install/setup.bash'
 alias sros='source /opt/ros/humble/setup.bash'
 alias vsc='code --no-sandbox --disable-gpu-sandbox --user-data-dir=/tmp/vscode .'
 alias sep='echo "================================================================="'
+alias colbuild="cd /root/colcon_ws/; colcon build --symlink-install; cd - > /dev/null"
+alias play_rosbag="cd ~/colcon_ws/src/orb_slam3_ros2_wrapper/ros2_bags; ros2 bag play rgbd_dataset_freiburg1_xyz_ROS2_bag/ --remap /camera/rgb/image_color:=robot_0/rgb_camera /camera/depth/image:=robot_0/depth_camera"
+alias orb="ros2 launch orb_slam3_ros2_wrapper RealSense_D435i.launch.py"
 source /opt/ros/humble/setup.bash
 export SCOUT_NAMESPACE=scout_2
 export ROS_DOMAIN_ID=55
