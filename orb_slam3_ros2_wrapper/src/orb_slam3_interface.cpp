@@ -402,7 +402,7 @@ namespace ORB_SLAM3_Wrapper
         // Copy the ros rgb image message to cv::Mat.
         try
         {
-            cvRGB = cv_bridge::toCvShare(msgRGB);
+            cvRGB = cv_bridge::toCvShare(msgRGB, "bgr8");
         }
         catch (cv_bridge::Exception &e)
         {
