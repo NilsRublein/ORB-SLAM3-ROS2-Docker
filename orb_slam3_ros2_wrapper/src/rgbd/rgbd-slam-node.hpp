@@ -85,6 +85,9 @@ namespace ORB_SLAM3_Wrapper
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
         rclcpp::Publisher<slam_msgs::msg::MapData>::SharedPtr mapDataPub_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mapPointsPub_;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr trackedImgPub_;
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odomPub_;
+
         // TF
         std::shared_ptr<tf2_ros::TransformBroadcaster> tfBroadcaster_;
         std::shared_ptr<tf2_ros::TransformListener> tfListener_;
@@ -106,6 +109,7 @@ namespace ORB_SLAM3_Wrapper
         bool no_odometry_mode_;
         bool inertial_mode_;
         bool publish_tf_;
+        bool publish_odometry;
         double frequency_tracker_count_ = 0;
         int map_data_publish_frequency_;
         int landmark_publish_frequency_;

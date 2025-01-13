@@ -16,6 +16,7 @@ ORB_SLAM3_RGBD_ROS2:
     visualization: true
     ros_visualization: true
     publish_tf: true
+    publish_odometry: true
     no_odometry_mode: true
     inertial_mode: true
     map_data_publish_frequency: 1000 # publish every 1000.0 milliseconds

@@ -443,6 +443,11 @@ namespace ORB_SLAM3_Wrapper
             Tcw = mSLAM_->TrackRGBD(cvRGB->image, cvD->image, typeConversions_->stampToSec(msgRGB->header.stamp), vImuMeas);
             auto currentTrackingState = mSLAM_->GetTrackingState();
             auto orbLoopClosing = mSLAM_->GetLoopClosing();
+
+            // TESTTESTTEST
+            //trackedImg_ = mSLAM_->GetCurrentFrame(); // -> has no such member ...
+            //trackedImg_ = cvRGB->image;
+
             if (orbLoopClosing->mergeDetected())
             {
                 // do not publish any values during map merging. This is because the reference poses change.
@@ -489,7 +494,7 @@ namespace ORB_SLAM3_Wrapper
         // Copy the ros rgb image message to cv::Mat.
         try
         {
-            cvRGB = cv_bridge::toCvShare(msgRGB);
+            cvRGB = cv_bridge::toCvShare(msgRGB, "bgr8");
         }
         catch (cv_bridge::Exception &e)
         {
@@ -540,5 +545,15 @@ namespace ORB_SLAM3_Wrapper
             }
             return false;
         }
+    }
+
+    // Returns tracked image.
+    cv::Mat ORBSLAM3Interface::getTrackedImage(){
+        return trackedImg_;
+    }
+
+    // Returns latest tracked pose in ROS coordinate frame
+    Eigen::Affine3d ORBSLAM3Interface::getLatestTrackedPose(){
+        return latestTrackedPose_;
     }
 }
