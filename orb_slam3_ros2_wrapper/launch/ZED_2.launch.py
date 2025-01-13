@@ -13,7 +13,7 @@ def generate_launch_description():
     robot_y = "0.0"
 
     # Set the config file path to the camera params
-    config_file_path = "/root/colcon_ws/src/orb_slam3_ros2_wrapper/params/ZED_X.yaml"
+    config_file_path = "/root/colcon_ws/src/orb_slam3_ros2_wrapper/params/ZED_2_VGA.yaml"
 
     # Set the log level
     log_level = "INFO"  # You can change this to INFO, WARN, ERROR, etc.

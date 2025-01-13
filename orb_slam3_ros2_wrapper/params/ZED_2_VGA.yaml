@@ -1,0 +1,117 @@
+%YAML:1.0
+
+# To be used in RGB-D mode!
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "PinHole"
+
+# Left Camera calibration from Hojat
+Camera1.fx: 267.2049865722656 #269.516269
+Camera1.fy: 267.2900085449219 #269.734233
+Camera1.cx: 333.1575012207031 #336.395110
+Camera1.cy: 186.69500732421875 #188.435176
+
+# From https://github.com/UZ-SLAMLab/ORB_SLAM3/issues/90 -> These are for a different resolution (1280x720)!
+#Camera.fx: 524.7325439453125
+#Camera.fy: 524.7325439453125
+#Camera.cx: 631.94970703125
+#Camera.cy: 354.74462890625
+
+Camera1.k1: -1.0195200443267822 #-0.033552
+Camera1.k2: 2.2964000701904297 #0.001859
+Camera1.k3: 0.181859 # Wasn't there before
+Camera1.p1: 8.696869917912409e-05 #0.000599
+Camera1.p2: -0.00045602800673805177 #-0.000901
+# Camera1.k3: 
+
+# Camera resolution -> VGA resolution, make sure zed_wrapper is set to the same resolution!
+Camera.width: 672
+Camera.height: 376
+
+# Camera frames per second 
+Camera.fps: 30
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale); required for RGBD
+Camera.RGB: 1
+
+# Close/Far threshold. Baseline times. -> Required for stereo! 
+Stereo.ThDepth: 45.0
+Stereo.b: 0.07732
+
+# stereo baseline in meters times fx
+# Camera.bf: 62.9323025728 # 119.9321517944336 * 524.732543945 / 100
+
+# If you are using non-rectified images, you will need to provide:
+# Stereo.T_c1_c2: # relative pose between stereo cameras
+
+# Depth map values factor, used to transform the depth map to real values
+RGBD.DepthMapFactor: 1.0 # We expect that received depth values already scale accurate
+
+# IMU
+
+# Transformation from body-frame (imu) to left camera. From https://github.com/UZ-SLAMLab/ORB_SLAM3/issues/90
+Tbc: !!opencv-matrix
+    rows: 4
+    cols: 4
+    dt: f
+    data: [-0.000014, -0.0139993, 0.999902, 0.023,
+           -0.999998, 0.0019999, 0.000014, 0.0, 
+           -0.0019999, -0.9999, -0.0139993, -0.002,
+             0.0, 0.0, 0.0, 1.0]
+
+# Do not insert KFs when recently lost
+IMU.InsertKFsWhenLost: 0
+
+# IMU noise (assumed values)
+IMU.NoiseGyro: 0.01 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
+IMU.NoiseAcc: 0.1 #2 # 1.47e-3 #1e-2 # m/s^1.5
+IMU.GyroWalk: 0.001 # rad/s^1.5
+IMU.AccWalk: 0.0001 # m/s^2.5
+IMU.Frequency: 200.0
+
+# Can try these values from https://github.com/UZ-SLAMLab/ORB_SLAM3/issues/90#issuecomment-2127246552
+#IMU.NoiseGyro: 0.007000000216066837 #0.028 #0.007000000216066837
+#IMU.NoiseAcc: 0.016 #0.0015999999595806003 #0.006 #0.0015999999595806003
+#IMU.GyroWalk: 0.0019474000437185168 #0.008 #0.0019474000437185168
+#IMU.AccWalk: 0.0002508999896235764 #0.001 #0.0002508999896235764
+#IMU.Frequency: 334
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# These are default params for 640x480 resolution ...
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 1000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0
