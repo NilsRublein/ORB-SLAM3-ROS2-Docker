@@ -92,6 +92,7 @@ namespace ORB_SLAM3_Wrapper
         geometry_msgs::msg::Pose se3ToPoseMsg(const Sophus::SE3f &s);
 
         sensor_msgs::msg::PointCloud2 MapPointsToPCL(std::vector<Eigen::Vector3f>& mapPoints);
+        sensor_msgs::msg::PointCloud2 DensePointsToPCL(std::vector<Eigen::Vector3f>& mapPoints);
 
         // **************************************TRANSFORMATIONS*************************************
         /**

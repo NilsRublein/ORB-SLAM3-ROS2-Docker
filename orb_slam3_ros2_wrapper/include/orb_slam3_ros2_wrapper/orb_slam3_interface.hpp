@@ -23,7 +23,6 @@
 
 #include <cv_bridge/cv_bridge.h>
 
-
 #include "sophus/se3.hpp"
 #include "System.h"
 #include "Frame.h"
@@ -78,7 +77,8 @@ namespace ORB_SLAM3_Wrapper
 
         void getCurrentMapPoints(sensor_msgs::msg::PointCloud2 &mapPointCloud);
 
-        void getCurrentKFPoints(sensor_msgs::msg::PointCloud2 &kFPointCloud);
+        void getCurrentKFSparsePoints(sensor_msgs::msg::PointCloud2 &kFPointCloud);
+        void getCurrentKFDensePoints(sensor_msgs::msg::PointCloud2 &kFPointCloud);
 
         void handleIMU(const sensor_msgs::msg::Imu::SharedPtr msgIMU);
 
@@ -89,7 +89,7 @@ namespace ORB_SLAM3_Wrapper
         Eigen::Affine3d getLatestTrackedPose();
 
         cv::Mat getTrackedImage();
-
+        
     private:
         std::shared_ptr<ORB_SLAM3::System> mSLAM_;
         std::shared_ptr<WrapperTypeConversions> typeConversions_;
@@ -105,7 +105,6 @@ namespace ORB_SLAM3_Wrapper
         std::mutex mapDataMutex_;
         std::mutex currentMapPointsMutex_;
         std::mutex currentKFPointsMutex_;
-
 
         std::unordered_map<ORB_SLAM3::Map *, Eigen::Affine3d> mapReferencePoses_;
         std::mutex mapReferencesMutex_;

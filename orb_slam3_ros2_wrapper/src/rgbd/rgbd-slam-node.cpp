@@ -247,7 +247,7 @@ namespace ORB_SLAM3_Wrapper
             RCLCPP_DEBUG_STREAM(this->get_logger(), "Time to create mapPCL object: " << time_create_mapPCL << " seconds");
 
             // interface_->getCurrentMapPoints(mapPCL);
-            interface_->getCurrentKFPoints(mapPCL);
+            interface_->getCurrentKFSparsePoints(mapPCL);
 
             if (mapPCL.data.size() == 0)
                 return;

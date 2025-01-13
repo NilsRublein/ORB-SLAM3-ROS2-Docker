@@ -145,7 +145,7 @@ namespace ORB_SLAM3_Wrapper
     }
 
     /*
-        Retrieves the current map points (i.e. all points of the current map) tracked by ORB-SLAM3 and transforms them into the ROS2 coordinate frame. 
+        Retrieves the current sparse map points (i.e. all points from all KFs of the current map) tracked by ORB-SLAM3 and transforms them into the ROS2 coordinate frame. 
         It then converts these points into a ROS2 PointCloud2 message, which can be used for visualization or further processing in ROS2.
     */
     void ORBSLAM3Interface::getCurrentMapPoints(sensor_msgs::msg::PointCloud2 &mapPointCloud)
@@ -184,7 +184,58 @@ namespace ORB_SLAM3_Wrapper
 
         localmapping.cc has GetCurrKF() ...
     */
-    void ORBSLAM3Interface::getCurrentKFPoints(sensor_msgs::msg::PointCloud2 &kFPointCloud)
+    void ORBSLAM3Interface::getCurrentKFSparsePoints(sensor_msgs::msg::PointCloud2 &kFPointCloud)
+    {
+        std::lock_guard<std::mutex> lock(currentKFPointsMutex_);
+        std::vector<Eigen::Vector3f> trackedKFPoints;
+        auto atlasAllKFs_ = orbAtlas_->GetAllKeyFrames();
+
+
+        // Check if there are any keyframes available
+        if (atlasAllKFs_.empty())
+        {
+            std::cerr << "Publishing last keyframe: No keyframes available." << endl;
+            return;
+        }
+        
+        // Sort the keyframes by their unique ID (mnId) to get the most recent one
+        auto latestKF = *std::max_element(atlasAllKFs_.begin(), atlasAllKFs_.end(),
+            [](const ORB_SLAM3::KeyFrame* a, const ORB_SLAM3::KeyFrame* b)
+            {
+                return a->mnId < b->mnId;  // Compare based on mnId
+            });
+
+        // Iterate over the map points in the most recent keyframe
+        for (auto &mapPoint : latestKF->GetMapPoints())
+        {
+            if (!mapPoint->isBad())
+            {
+                auto worldPos = typeConversions_->vector3fORBToROS(mapPoint->GetWorldPos());
+                mapReferencesMutex_.lock();
+
+                // Check if the keyframe exists in the allKFs_ container
+                if (allKFs_.count(latestKF->mnId) == 0)
+                {
+                    mapReferencesMutex_.unlock();
+                    continue;
+                }
+
+                // Transform the map point based on the reference pose
+                auto mapPointWorld = typeConversions_->transformPointWithReference<Eigen::Vector3f>(mapReferencePoses_[allKFs_[latestKF->mnId]->GetMap()], worldPos);
+                mapReferencesMutex_.unlock();
+
+                // Store the transformed map point
+                trackedKFPoints.push_back(mapPointWorld);
+            }
+        }
+
+        // Convert tracked map points to a PointCloud2 message
+        kFPointCloud = typeConversions_->MapPointsToPCL(trackedKFPoints);
+    }
+
+    // ----------------------------------------
+
+    void ORBSLAM3Interface::getCurrentKFDensePoints(sensor_msgs::msg::PointCloud2 &kFPointCloud)
     {
         std::lock_guard<std::mutex> lock(currentKFPointsMutex_);
         std::vector<Eigen::Vector3f> trackedKFPoints;

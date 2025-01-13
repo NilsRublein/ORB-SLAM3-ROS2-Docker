@@ -126,7 +126,7 @@ namespace ORB_SLAM3_Wrapper
     */
     sensor_msgs::msg::PointCloud2 WrapperTypeConversions::MapPointsToPCL(std::vector<Eigen::Vector3f>& mapPoints)
     {
-        const int numChannels = 3; // x y z
+        const int numChannels = 3; // x, y, z
 
         if (mapPoints.size() == 0)
         {
@@ -162,6 +162,68 @@ namespace ORB_SLAM3_Wrapper
         for (unsigned int i = 0; i < cloud.width; i++)
         {
             Eigen::Vector3f point_translation = mapPoints[i];
+
+            float data_array[numChannels] = {
+                point_translation.x(), point_translation.y(), point_translation.z()};
+
+            memcpy(cloud_data_ptr + (i * cloud.point_step), data_array,
+                    numChannels * sizeof(float));
+        }
+        return cloud;
+    }
+
+    // @TODO: Change input from MapPoints to what we get from the DensePoints
+    // Publish Dense points as Pointcloud2 msg. 
+    sensor_msgs::msg::PointCloud2 WrapperTypeConversions::DensePointsToPCL(std::vector<Eigen::Vector3f>& mapPoints)
+    {
+        const int numChannels = 4; // x, y, z, rgb
+
+        // @TODO Check how to access mapColors;
+        std::vector<Eigen::Vector3i> mapColors;
+
+        if (mapPoints.size() == 0 || mapColors.size() == 0 || mapPoints.size() != mapColors.size())
+        {
+            std::cerr << "Map points or colors are empty, or their sizes don't match!" << std::endl;
+            return {};
+        }
+
+        sensor_msgs::msg::PointCloud2 cloud;
+
+        // cloud.header.stamp = current_frame_time;
+        cloud.header.frame_id = "map";
+        cloud.height = 1;
+        cloud.width = mapPoints.size();
+        cloud.is_bigendian = false;
+        cloud.is_dense = true;
+        cloud.point_step = numChannels * sizeof(float);
+        cloud.row_step = cloud.point_step * cloud.width;
+        cloud.fields.resize(numChannels);
+
+        std::string channel_id[] = {"x", "y", "z", "rgb"};
+
+        for (int i = 0; i < numChannels; i++)
+        {
+            cloud.fields[i].name = channel_id[i];
+            cloud.fields[i].offset = i * sizeof(float);
+            cloud.fields[i].count = 1;
+            cloud.fields[i].datatype = sensor_msgs::msg::PointField::FLOAT32;
+        }
+
+        cloud.data.resize(cloud.row_step * cloud.height);
+
+        unsigned char *cloud_data_ptr = &(cloud.data[0]);
+
+        for (unsigned int i = 0; i < cloud.width; i++)
+        {
+            Eigen::Vector3f point_translation = mapPoints[i];
+            Eigen::Vector3i color = mapColors[i];
+
+            // Pack RGB into a single float
+            uint32_t rgb = (static_cast<uint8_t>(color[0]) << 16 | // Red
+                            static_cast<uint8_t>(color[1]) << 8  | // Green
+                            static_cast<uint8_t>(color[2]));      // Blue
+            float rgb_float;
+            memcpy(&rgb_float, &rgb, sizeof(uint32_t));
 
             float data_array[numChannels] = {
                 point_translation.x(), point_translation.y(), point_translation.z()};
