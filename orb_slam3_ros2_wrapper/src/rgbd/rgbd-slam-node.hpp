@@ -13,6 +13,7 @@
 #include <chrono>
 
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -73,6 +74,11 @@ namespace ORB_SLAM3_Wrapper
                           std::shared_ptr<slam_msgs::srv::GetMap::Request> request,
                           std::shared_ptr<slam_msgs::srv::GetMap::Response> response);
 
+        // Find a better way to assign time stamps then below. We assign this timestamp as otherwise the data analayzer pkg from Hojat doesn't work.
+        nav_msgs::msg::Odometry createOdometryMsgCorrected(const sensor_msgs::msg::Image::SharedPtr msgRGB);
+        nav_msgs::msg::Odometry createOdometryMsgUncorrected(const sensor_msgs::msg::Image::SharedPtr msgRGB);
+        void publishLoopClosure();
+
         /**
          * Member variables
          */
@@ -86,8 +92,10 @@ namespace ORB_SLAM3_Wrapper
         rclcpp::Publisher<slam_msgs::msg::MapData>::SharedPtr mapDataPub_;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mapPointsPub_;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr trackedImgPub_;
-        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odomPub_;
-
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odomPubCorrected_;
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odomPubUnCorrected_;
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr loopClosurePub_;
+        
         // TF
         std::shared_ptr<tf2_ros::TransformBroadcaster> tfBroadcaster_;
         std::shared_ptr<tf2_ros::TransformListener> tfListener_;

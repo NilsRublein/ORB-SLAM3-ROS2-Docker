@@ -32,8 +32,10 @@ namespace ORB_SLAM3_Wrapper
         mapDataPub_ = this->create_publisher<slam_msgs::msg::MapData>("map_data", 10);
         mapPointsPub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("map_points", 10);
         trackedImgPub_ = this->create_publisher<sensor_msgs::msg::Image>("tracked_img", 1); 
-        odomPub_ = this->create_publisher<nav_msgs::msg::Odometry>("orb_odometry", 100);
-        
+        odomPubCorrected_ = this->create_publisher<nav_msgs::msg::Odometry>("orb_odometry_corrected", 100);
+        odomPubUnCorrected_ = this->create_publisher<nav_msgs::msg::Odometry>("orb_odometry_uncorrected", 100);
+        loopClosurePub_ = this->create_publisher<std_msgs::msg::Bool>("loop_closure_detected", 100);
+
         // ROS Services
         getMapDataService_ = this->create_service<slam_msgs::srv::GetMap>("orb_slam3_get_map_data", std::bind(&RgbdSlamNode::getMapServer, this,
                                                                                                               std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -145,10 +147,12 @@ namespace ORB_SLAM3_Wrapper
         if (inertial_mode_)
         {
             return_val = interface_->trackRGBDi(msgRGB, msgD, Tcw); // RGBD-Inertial
+            publishLoopClosure();
         } 
         else
         {
             return_val = interface_->trackRGBD(msgRGB, msgD, Tcw); // RGBD-only
+            publishLoopClosure();
         } 
 
         if (return_val)
@@ -164,54 +168,20 @@ namespace ORB_SLAM3_Wrapper
 
                 if (publish_tf_)
                 {
-                tfBroadcaster_->sendTransform(tfMapOdom_);
-            }
+                    tfBroadcaster_->sendTransform(tfMapOdom_);
+                }
 
                 if (publish_odometry)
                 {
-                    RCLCPP_WARN_STREAM(this->get_logger(), "Odometry publishing not implemented yet!");
+                    RCLCPP_WARN_STREAM(this->get_logger(), "Real Odometry publishing not implemented yet!");
                     
-                    // Create an Odometry message
-                    nav_msgs::msg::Odometry odom;
-                    // odom.header.stamp = this->now(); // Get ROS timestamp
-                    odom.header.stamp = msgRGB->header.stamp; // Use timestamp of when the image was "captured"
+                    // The functions below fill odometry msgs with corrected and uncorrected poses. Covariances and velocties are not implemented yet!
+                    
+                    nav_msgs::msg::Odometry odomCorrected = createOdometryMsgCorrected(msgRGB);
+                    odomPubCorrected_->publish(odomCorrected);
 
-                    // Set header fields
-                    odom.header.frame_id = "map";      // Set the frame ID
-                    odom.child_frame_id  = "base_link";
-
-                    // @TODO Probably best to get the translation and Quaternion already in >getLatestTrackedPose(); and just return a pose
-                    Eigen::Affine3d currentPose =  interface_->getLatestTrackedPose();
-                    Eigen::Vector3d translation = currentPose.translation();
-                    Eigen::Quaterniond quaternion(currentPose.linear());
-
-                    // Pose
-                    odom.pose.pose.position.x = translation.x();
-                    odom.pose.pose.position.y = translation.y();
-                    odom.pose.pose.position.z = translation.z();
-                    odom.pose.pose.orientation.x = quaternion.x();
-                    odom.pose.pose.orientation.y = quaternion.y();
-                    odom.pose.pose.orientation.z = quaternion.z();
-                    odom.pose.pose.orientation.w = quaternion.w(); 
-
-                    // TODO calculate velocity and calculate covariances for pose and velocity. For now, fill every value with 0.
-
-                    // Initialize pose covariance to zero (if needed)
-                    std::fill(odom.pose.covariance.begin(), odom.pose.covariance.end(), 0.0);
-
-                    // Initialize twist (linear and angular velocities) to zero
-                    odom.twist.twist.linear.x = 0.0;
-                    odom.twist.twist.linear.y = 0.0;
-                    odom.twist.twist.linear.z = 0.0;
-                    odom.twist.twist.angular.x = 0.0;
-                    odom.twist.twist.angular.y = 0.0;
-                    odom.twist.twist.angular.z = 0.0;
-
-                    // Initialize twist covariance to zero (if needed)
-                    std::fill(odom.twist.covariance.begin(), odom.twist.covariance.end(), 0.0);
-
-                    // Publish the Odometry message
-                    odomPub_->publish(odom);
+                    nav_msgs::msg::Odometry odomUncorrected = createOdometryMsgUncorrected(msgRGB);
+                    odomPubUnCorrected_->publish(odomUncorrected);
                 }
             }
 
@@ -220,9 +190,9 @@ namespace ORB_SLAM3_Wrapper
             // Publish Map points
             if (rosViz_)
             {
-            publishMapPointCloud();
-            std::thread(&RgbdSlamNode::publishMapPointCloud, this).detach();
-        }
+                publishMapPointCloud();
+                std::thread(&RgbdSlamNode::publishMapPointCloud, this).detach();
+            }
 
             // Publish tracked image
             //cv::Mat image = interface_->getTrackedImage();
@@ -296,5 +266,84 @@ namespace ORB_SLAM3_Wrapper
         slam_msgs::msg::MapData mapDataMsg;
         interface_->mapDataToMsg(mapDataMsg, false, request->tracked_points, request->kf_id_for_landmarks);
         response->data = mapDataMsg;
+    }
+
+    nav_msgs::msg::Odometry RgbdSlamNode::createOdometryMsgCorrected(const sensor_msgs::msg::Image::SharedPtr msgRGB){
+        nav_msgs::msg::Odometry odom;
+        odom.header.stamp = msgRGB->header.stamp; // Use timestamp of when the image was "captured"
+
+        // Set header fields
+        odom.header.frame_id = "map";      // Set the frame ID
+        odom.child_frame_id  = "base_link";
+
+        // Pose
+        // @TODO Probably best to get the translation and Quaternion already in >getLatestTrackedPose(); and just return a pose
+        Eigen::Affine3d currentPose =  interface_->getLatestTrackedPose();
+        Eigen::Vector3d translation = currentPose.translation();
+        Eigen::Quaterniond quaternion(currentPose.linear());
+
+        odom.pose.pose.position.x = translation.x();
+        odom.pose.pose.position.y = translation.y();
+        odom.pose.pose.position.z = translation.z();
+        odom.pose.pose.orientation.x = quaternion.x();
+        odom.pose.pose.orientation.y = quaternion.y();
+        odom.pose.pose.orientation.z = quaternion.z();
+        odom.pose.pose.orientation.w = quaternion.w(); 
+
+        // TODO calculate velocity and calculate covariances for pose and velocity. For now, fill every value with 0.
+
+        // Initialize pose covariance to zero (if needed)
+        std::fill(odom.pose.covariance.begin(), odom.pose.covariance.end(), 0.0);
+
+        // Initialize twist (linear and angular velocities) to zero
+        odom.twist.twist.linear.x = 0.0;
+        odom.twist.twist.linear.y = 0.0;
+        odom.twist.twist.linear.z = 0.0;
+        odom.twist.twist.angular.x = 0.0;
+        odom.twist.twist.angular.y = 0.0;
+        odom.twist.twist.angular.z = 0.0;
+
+        // Initialize twist covariance to zero (if needed)
+        std::fill(odom.twist.covariance.begin(), odom.twist.covariance.end(), 0.0);
+
+        return odom;
+    }
+
+    nav_msgs::msg::Odometry RgbdSlamNode::createOdometryMsgUncorrected(const sensor_msgs::msg::Image::SharedPtr msgRGB){
+        nav_msgs::msg::Odometry odom;
+        odom.header.stamp = msgRGB->header.stamp; // Use timestamp of when the image was "captured"
+
+        // Set header fields
+        odom.header.frame_id = "map";      // Set the frame ID
+        odom.child_frame_id  = "base_link";
+
+        // Pose
+        geometry_msgs::msg::Pose currentPose = interface_->getLatestTrackedPoseUncorrected();
+        odom.pose.pose = currentPose;
+
+        // TODO calculate velocity and calculate covariances for pose and velocity. For now, fill every value with 0.
+
+        // Initialize pose covariance to zero (if needed)
+        std::fill(odom.pose.covariance.begin(), odom.pose.covariance.end(), 0.0);
+
+        // Initialize twist (linear and angular velocities) to zero
+        odom.twist.twist.linear.x = 0.0;
+        odom.twist.twist.linear.y = 0.0;
+        odom.twist.twist.linear.z = 0.0;
+        odom.twist.twist.angular.x = 0.0;
+        odom.twist.twist.angular.y = 0.0;
+        odom.twist.twist.angular.z = 0.0;
+
+        // Initialize twist covariance to zero (if needed)
+        std::fill(odom.twist.covariance.begin(), odom.twist.covariance.end(), 0.0);
+
+        return odom;
+    }
+
+    void RgbdSlamNode::publishLoopClosure(){
+        auto message = std_msgs::msg::Bool();
+        //message.header.stamp = msgRGB->header.stamp; 
+        message.data = interface_->getLoopClosureState();  
+        loopClosurePub_->publish(message);
     }
 }

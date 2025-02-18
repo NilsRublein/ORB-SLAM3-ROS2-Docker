@@ -87,6 +87,8 @@ namespace ORB_SLAM3_Wrapper
         bool trackRGBD(const sensor_msgs::msg::Image::SharedPtr msgRGB, const sensor_msgs::msg::Image::SharedPtr msgD, Sophus::SE3f &Tcw);
 
         Eigen::Affine3d getLatestTrackedPose();
+        geometry_msgs::msg::Pose getLatestTrackedPoseUncorrected();
+        bool getLoopClosureState();
 
         cv::Mat getTrackedImage();
         
@@ -117,6 +119,10 @@ namespace ORB_SLAM3_Wrapper
         std::string robotFrame_;
 
         cv::Mat trackedImg_;
+
+        geometry_msgs::msg::Pose latestTrackedPoseUncorrected_;
+        bool loopClosureDetected = false;
+
     };
 }
 

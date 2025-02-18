@@ -503,13 +503,16 @@ namespace ORB_SLAM3_Wrapper
             {
                 // do not publish any values during map merging. This is because the reference poses change.
                 std::cout << "Waiting for merge to finish." << endl;
+                loopClosureDetected = true;
                 return false;
             }
             if (currentTrackingState == 2)
             {
+                latestTrackedPoseUncorrected_ = typeConversions_->se3ToPoseMsg(Tcw); // Get pose without loop closure.
                 calculateReferencePoses();
                 correctTrackedPose(Tcw);
                 hasTracked_ = true;
+                loopClosureDetected = false;
                 return true;
             }
             else
@@ -575,6 +578,7 @@ namespace ORB_SLAM3_Wrapper
         }
         if (currentTrackingState == 2)
         {
+            latestTrackedPoseUncorrected_ = typeConversions_->se3ToPoseMsg(Tcw); // Get pose without loop closure.
             calculateReferencePoses();
             correctTrackedPose(Tcw);
             hasTracked_ = true;
@@ -606,5 +610,14 @@ namespace ORB_SLAM3_Wrapper
     // Returns latest tracked pose in ROS coordinate frame
     Eigen::Affine3d ORBSLAM3Interface::getLatestTrackedPose(){
         return latestTrackedPose_;
+    }
+
+    // Returns latest untracked tracked pose in ROS coordinate frame
+    geometry_msgs::msg::Pose ORBSLAM3Interface::getLatestTrackedPoseUncorrected(){
+        return latestTrackedPoseUncorrected_;
+    }
+
+    bool ORBSLAM3Interface::getLoopClosureState(){
+        return loopClosureDetected;
     }
 }
