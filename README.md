@@ -8,10 +8,40 @@ This fork contains so far the following changes:
   * `rgbd-slam-node.cpp`
 * Added `octomap_server` to the main launch file
 * Added scripts for testing on [TUM rgbd dataset](https://cvg.cit.tum.de/rgbd/dataset/)
-   
-## TUM1
+* Added simple point cloud accumulation for dense mapping (in [ORBSLAM3](https://github.com/NilsRublein/ORB_SLAM3), not the wrapper)
+* Added publishers for publishing
+  * The loop closure corrected pose
+  * The pose before loop closure detection
+  * Loop closure detection
 
-Download the rosbag and convert it to a ROS2 bag:
+## TODO
+### Publishing Odometry 
+
+* Determine how to calculate co-variances for sensor fusion. 
+* Verify that uncorrected pose is indeed without loop closure corrections. A publisher has been already added that indicates loop closure detection. → Compare corrected and uncorrected pose.
+
+### Dense Mapping
+
+* ROS2 publishing
+
+  * Port the dense map from ORBSLAM3 into the ROS2 wrapper, convert from OpenCV frame to ROS frame and publish as `PointCloud2` message.
+  * Verify that the this map works as expected with the Octomap server (works already with sparse map).
+
+* ZED Depth estimation
+
+  * Currently we are using the ZED-ROS2-Wrapper for depth estimation which significantly reduces performances of the normal camera images. Either invest time into fixing performance issues of ZED-ROS2-Wrapper or look into alternatives for robust depth estimation methods (e.g. deep stereo matching networks). 
+
+  * Add a filter to reduce noise in the depth estimation
+
+### Other
+
+* General Clean up & merge with latest updates from forked repo.
+* Add a feature that publishes the number of tracked features by ORBSLAM3.
+* Add some parametization to the dense pointcloud creation (e.g. resolution)
+   
+## TUM1 Rosbags & launchfile
+
+Download the TUM1 rosbag from the [TUM rgbd dataset](https://cvg.cit.tum.de/rgbd/dataset/) and convert it to a ROS2 bag:
 
 ```bash
 # If required, install rosbags:
@@ -37,6 +67,29 @@ sudo docker compose run orb_slam3_22_humble
 ros2 launch orb_slam3_ros2_wrapper TUM1.launch.py 
 ```
 
+## ZED2 / ZEDX Rosbags and launchfile
+
+Below you can find instructions run a rosbag from either ZED2 or ZEDX camera. 
+Note that there have been different launch files created yfor different camera resolutions. As the camera resolution changes, also the intrinsic parameters of the calibration file changes. The different launch files therefore simply load different `camera.yaml` files.
+
+**@TODO**: Simply link in the config file to the correct `camera.yaml` file instead of having different launch files. This way you only need to change parameters in one place.
+
+Run the ROS bag:
+```bash
+# This docker container expects ROS_DOMAIN_ID=55. If not already set, you can run:
+export ROS_DOMAIN_ID=55
+
+# Start ROS bag in one terminal with renamed topics 
+ros2 bag play outdoor_flight_4 --remap /zed/zed_node/left_raw_gray/image_raw_gray:=robot_0/rgb_camera /zed/zed_node/depth/depth_registered:=robot_0/depth_camera /zed/zed_node/imu/data_raw:=robot_0/imu
+```
+
+Run ORB-SLAM3:
+```bash
+# Launch docker container and node in a another terminal
+sudo docker compose run orb_slam3_22_humble
+ros2 launch orb_slam3_ros2_wrapper ZED_2_VGA.launch.py # Replace camera resolution if needed!
+```
+
 ## Octomap in Rviz2
 
 `rgbd.launch.py` has been modified to also launch an `octomap_server`. 
@@ -52,6 +105,13 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/liboctomap.so ros2 run rviz2 rviz2
 ```
 
 Finally, in Rviz2, select from `octomap_rviz_plugins` the `OccupancyGrid` plugin to display the 3D octomap.
+
+## Troubleshooting
+* Make sure you have the same `ROS_DOMAIN_ID`
+* If you see `Waiting for Image` in the ORBSLAM3 Pangolin viewer, make sure you
+  * You are remapping the topics correctly. 
+  * If you enabled IMU measurements, ORBSLAM will expect IMU data and not run without it.
+* You can run rosbags also from outside the docker container. However, to see the msgs from the topics you can use the following DDS settings as a workaround: [Issue #8](https://github.com/suchetanrs/ORB-SLAM3-ROS2-Docker/issues/8)
 
 ***
 
